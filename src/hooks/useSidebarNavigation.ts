@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
 import { useModules } from '../context/ModulesContext';
-import { useSidebarCollapse } from '../context/SidebarCollapseContext';
-import { useIsMobile } from './useMediaQuery';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_NAV } from '../lib/adminNav';
@@ -16,15 +14,12 @@ interface SidebarNavigationOptions {
   isOpenMobile: boolean;
   onCloseMobile?: () => void;
   isMasterAdmin: boolean;
-  overlay: boolean;
 }
 
-export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmin, overlay }: SidebarNavigationOptions) {
+export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmin }: SidebarNavigationOptions) {
   const { t } = useLang();
   const { pathname } = useLocation();
   const customerId = useSelectedCustomerId();
-  const mobile = useIsMobile();
-  const { isSidebarCollapsed, toggleSidebar } = useSidebarCollapse();
   const { allowed } = useModules();
   const { can } = useAuth();
   const asideRef = useRef<HTMLElement>(null);
@@ -75,7 +70,7 @@ export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmi
   }, [isOpenMobile, onCloseMobile]);
 
   return {
-    t, customerId, isSidebarCollapsed, toggleSidebar, asideRef, activeId, currentSection, groups, openId, toggleSection,
-    drawerVisible: overlay || mobile ? isOpenMobile : !isSidebarCollapsed,
+    t, customerId, asideRef, activeId, currentSection, groups, openId, toggleSection,
+    drawerVisible: isOpenMobile,
   };
 }

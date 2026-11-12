@@ -7,6 +7,7 @@ import { SidebarCollapseProvider } from '../../context/SidebarCollapseContext';
 import { PrimaryRail } from '../PrimaryRail';
 import { MODULE_IDS } from '../../lib/modules';
 import { visibleWorkspaceSections } from '../../lib/workspaceNavigation';
+import { APP_VERSION } from '../../lib/appVersion';
 
 vi.mock('../../context/ModulesContext', async () => {
   const { MODULE_IDS } = await import('../../lib/modules');
@@ -73,5 +74,23 @@ describe('Thanh phân hệ thu gọn — tab phụ', () => {
     fireEvent.mouseEnter(sectionLink(single.label).parentElement!);
     expect(screen.queryByRole('region', { name: `Tab phụ ${single.label}` })).toBeNull();
     expect(sectionLink(single.label).getAttribute('aria-haspopup')).toBeNull();
+  });
+
+  it('luôn ở dạng thu gọn: không còn nút mở rộng menu, có số phiên bản ở đáy thanh', () => {
+    mount();
+    expect(screen.queryByRole('button', { name: 'Mở rộng menu' })).toBeNull();
+    expect(rail().getByText(APP_VERSION)).toBeTruthy();
+  });
+
+  it('rê chuột tô đậm phân hệ; phân hệ đang bung bảng giữ nền đậm', () => {
+    const other = sections.find(sec => sec.items.length > 1 && !sec.items.some(i => i.path === '/dashboard'))!;
+    mount();
+    const head = sectionLink(other.label);
+    expect(head.className).toContain('hover:bg-panel-muted');
+    expect(head.className).toContain('hover:font-semibold');
+    expect(head.getAttribute('aria-current')).toBeNull();
+    fireEvent.mouseEnter(head.parentElement!);
+    expect(head.className).toMatch(/(^| )bg-panel-muted( |$)/);
+    expect(head.className).toMatch(/(^| )font-semibold( |$)/);
   });
 });

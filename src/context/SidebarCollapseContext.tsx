@@ -1,17 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface SidebarCollapseContextType {
-  isSidebarCollapsed: boolean;
-  setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
-  toggleSidebar: () => void;
   isSecondaryCollapsed: boolean;
   setIsSecondaryCollapsed: (collapsed: boolean) => void;
 }
 
 const SidebarCollapseContext = createContext<SidebarCollapseContextType>({
-  isSidebarCollapsed: false,
-  setIsSidebarCollapsed: () => {},
-  toggleSidebar: () => {},
   isSecondaryCollapsed: false,
   setIsSecondaryCollapsed: () => {},
 });
@@ -38,13 +32,10 @@ function usePersistentFlag(key: string, fallback: () => boolean) {
 }
 
 export const SidebarCollapseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = usePersistentFlag('cm_sidebar_collapsed', () => window.innerWidth < 1200);
   const [isSecondaryCollapsed, setIsSecondaryCollapsed] = usePersistentFlag('cm_secondary_collapsed', () => false);
 
-  const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
-
   return (
-    <SidebarCollapseContext.Provider value={{ isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, isSecondaryCollapsed, setIsSecondaryCollapsed }}>
+    <SidebarCollapseContext.Provider value={{ isSecondaryCollapsed, setIsSecondaryCollapsed }}>
       {children}
     </SidebarCollapseContext.Provider>
   );

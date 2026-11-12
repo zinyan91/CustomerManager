@@ -30,8 +30,8 @@ function AppLayoutContent() {
     || ['customers', 'credit-contracts', 'disbursement', 'loans', 'collaterals'].includes(screenId ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/kpi-forecast','/kpi-dot','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
-  const { isSidebarCollapsed, isSecondaryCollapsed } = useSidebarCollapse();
-  const navWidth = isSidebarCollapsed ? 88 : 240;
+  const { isSecondaryCollapsed } = useSidebarCollapse();
+  const navWidth = 88;
   const secondaryWidth = section === 'documents' && !isSecondaryCollapsed ? 220 : 0;
   const navVars = { '--app-nav-w': `${navWidth}px`, '--app-content-left': `${navWidth + secondaryWidth}px` } as CSSProperties;
 
@@ -92,7 +92,7 @@ function AppLayoutContent() {
         onOpenCommandPalette={handleOpenCommandPalette}
       />
 
-      {isSidebarCollapsed && <PrimaryRail isMasterAdmin={isMasterAdmin} />}
+      <PrimaryRail isMasterAdmin={isMasterAdmin} />
 
       <Sidebar
         isOpenMobile={isMobileMenuOpen}

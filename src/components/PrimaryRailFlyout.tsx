@@ -25,7 +25,7 @@ export function PrimaryRailFlyout({ section, top, activeId, customerId, itemLabe
           const Icon = item.icon;
           const active = item.id === activeId;
           const className = `flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sidebar border focus-visible:outline-2 focus-visible:outline-accent ${
-            active ? 'bg-accent-soft text-accent font-semibold border-line/70' : 'border-transparent text-ink-muted hover:text-ink hover:bg-surface'
+            active ? 'bg-accent-soft text-accent font-semibold border-line/70' : 'border-transparent text-ink-muted hover:text-ink hover:font-semibold hover:bg-panel-muted hover:border-line'
           }`;
           const body = <>
             {Icon && <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />}

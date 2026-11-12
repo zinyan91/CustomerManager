@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { DocumentTemplateView } from '../DocumentTemplateView';
-import { SidebarCollapseProvider, useSidebarCollapse } from '../../../context/SidebarCollapseContext';
+import { SidebarCollapseProvider } from '../../../context/SidebarCollapseContext';
 
 afterEach(() => { cleanup(); localStorage.clear(); });
 const tree = () => within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
@@ -13,11 +13,6 @@ const openFolder = (name:string) => {
 };
 const pick = (name:string) => fireEvent.click(tree().getByRole('button',{name}));
 const included = (dossier:string) => tree().getByRole('checkbox',{name:`Gồm Giấy Cam Kết (${dossier})`}) as HTMLInputElement;
-
-function SidebarToggle() {
-  const {toggleSidebar}=useSidebarCollapse();
-  return <button onClick={toggleSidebar}>Thu sidebar</button>;
-}
 
 describe('Hồ sơ chứng từ — cây bộ hồ sơ làm menu phụ',()=>{
   it('đặt một cây trong cột menu phụ, bỏ các ô chọn ngang',()=>{
@@ -54,15 +49,12 @@ describe('Hồ sơ chứng từ — cây bộ hồ sơ làm menu phụ',()=>{
     expect(tree().getByRole('button',{name:'HĐ Thi Công Nhà Ở'})).toBeTruthy();
     expect(tree().queryByRole('button',{name:'HĐ Mua Bán Hàng Hóa'})).toBeNull();
   });
-  it('thu cây và mở lại bằng nút riêng, không phụ thuộc sidebar',()=>{
-    localStorage.setItem('cm_sidebar_collapsed','false');
-    render(<SidebarCollapseProvider><SidebarToggle /><DocumentTemplateView /></SidebarCollapseProvider>);
-    fireEvent.click(screen.getByRole('button',{name:'Thu sidebar'}));
+  it('thu cây và mở lại bằng nút riêng',()=>{
+    render(<SidebarCollapseProvider><DocumentTemplateView /></SidebarCollapseProvider>);
     expect(document.querySelector('#dossier-tree')).toBeTruthy();
     fireEvent.click(tree().getByRole('button',{name:'Ẩn Bộ hồ sơ'}));
     expect(document.querySelector('#dossier-tree')).toBeNull();
     expect(localStorage.getItem('cm_secondary_collapsed')).toBe('true');
-    expect(localStorage.getItem('cm_sidebar_collapsed')).toBe('true');
     fireEvent.click(screen.getByRole('button',{name:'Mở cây hồ sơ'}));
     expect(document.querySelector('#dossier-tree')).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();

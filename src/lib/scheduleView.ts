@@ -84,3 +84,14 @@ export function sumObligations(obligations: PeriodObligation[]): ObligationLine 
     { due: 0, paid: 0, unpaid: 0 }
   );
 }
+
+export function sumDueParts(obligations: PeriodObligation[]): { principal: number; interest: number; penalty: number } {
+  return obligations.reduce(
+    (acc, o) => ({
+      principal: acc.principal + o.principal.due,
+      interest: acc.interest + o.interest.due,
+      penalty: acc.penalty + o.penalty.due,
+    }),
+    { principal: 0, interest: 0, penalty: 0 }
+  );
+}

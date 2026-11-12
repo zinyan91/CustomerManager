@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import type { Customer, LoanContract, CreditContract } from '../../types';
@@ -164,10 +164,11 @@ describe('LoanPortfolioView — lỗi tải không hiện như danh sách rỗng
 describe('LoanPortfolioView — mặc định đang vay, đổi khách tại chỗ', () => {
   it('mặc định chỉ hiện GNN đang vay; bấm "Tất cả" mới hiện khoản đã tất toán', async () => {
     const api = await import('../../lib/api');
-    vi.mocked(api.fetchContractsByCustomerAPI).mockResolvedValueOnce([
+    vi.mocked(api.fetchContractsByCustomerAPI).mockImplementation(async () => [
       ...danhSachKunn,
       { ...kunn(1050, '2002/HĐTD/9632203/GNN-00', 200_000_000), IsSettled: true, CurrentBalance: 0 },
     ]);
+    onTestFinished(() => { vi.mocked(api.fetchContractsByCustomerAPI).mockImplementation(async () => danhSachKunn); });
     dungLen(1);
     await screen.findByText('2002/HĐTD/9632203/GNN-01');
     expect(screen.queryByText('2002/HĐTD/9632203/GNN-00')).toBeNull();

@@ -114,10 +114,13 @@ describe('ScheduleTab dựng được lên', () => {
 
 describe('cột Ghi nhận và thao tác', () => {
 
-  it('bảng còn 8 cột — ô chọn kỳ gộp vào cột Kỳ, không chiếm cột riêng', () => {
+  it('bảng 11 cột: Gốc, Lãi, Lãi phạt đứng ngay trước Phải thu; ô chọn kỳ gộp vào cột Kỳ', () => {
     dungLen();
     const table = document.querySelector('table')!;
-    expect(table.querySelectorAll('thead th')).toHaveLength(8);
+    const heads = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    expect(heads).toHaveLength(11);
+    const i = heads.indexOf('Phải thu');
+    expect(heads.slice(i - 3, i + 1)).toEqual(['Gốc', 'Lãi', 'Lãi phạt', 'Phải thu']);
     const cot1 = table.querySelector('tbody tr td:first-child')!;
     expect(cot1.querySelector('input[type=radio]')).toBeTruthy();
     expect(cot1.textContent).toContain('1');
@@ -270,5 +273,31 @@ describe('đầu tab chỉ hiện KUNN đang chọn', () => {
   it('KUNN đã tất toán có nhãn Đã tất toán', () => {
     dungLen(lich, { ...kunn, IsSettled: true, CurrentBalance: 0 });
     expect(screen.getByText('Đã tất toán')).toBeTruthy();
+  });
+});
+
+describe('ScheduleTab — tách gốc, lãi, lãi phạt để đối chiếu', () => {
+  it('mỗi kỳ và dòng tổng hiện riêng gốc, lãi, lãi phạt; tổng = gốc + lãi + lãi phạt', () => {
+    const rows = [
+      ky({ Id: 1, PeriodNumber: 1, DueDate: '2026-02-08', IsPaid: true, PrincipalAmount: 15_850_000, InterestAmount: 18_583_562 }),
+      ky({ Id: 2, PeriodNumber: 2, DueDate: '2026-03-08', IsPaid: true, PrincipalAmount: 0, InterestAmount: 22_108_663, OverdueInterestAmount: 120_000, OverdueDays: 3, PaymentDate: '2026-03-11', ActualPaidInterest: 22_228_663 }),
+    ];
+    dungLen(rows);
+    const table = document.querySelector('table')!;
+    const heads = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    const col = (name: string) => heads.indexOf(name);
+    const r1 = table.querySelectorAll('tbody tr')[0].querySelectorAll('td');
+    expect(r1[col('Gốc')].textContent).toBe('15.850.000');
+    expect(r1[col('Lãi')].textContent).toBe('18.583.562');
+    expect(r1[col('Lãi phạt')].textContent).toBe('–');
+    expect(r1[col('Phải thu')].textContent).toBe('34.433.562');
+    const r2 = table.querySelectorAll('tbody tr')[1].querySelectorAll('td');
+    expect(r2[col('Gốc')].textContent).toBe('–');
+    expect(r2[col('Lãi phạt')].textContent).toBe('120.000');
+    const foot = Array.from(table.querySelectorAll('tfoot td')).map(td => td.textContent);
+    expect(foot).toContain('15.850.000');
+    expect(foot).toContain('40.692.225');
+    expect(foot).toContain('120.000');
+    expect(foot).toContain('56.662.225');
   });
 });

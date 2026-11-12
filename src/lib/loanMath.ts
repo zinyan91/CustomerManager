@@ -443,10 +443,12 @@ export function recalculateSchedules(
   const isBullet = isBulletPrincipal(contract);
 
   const totalPeriods = schedList.length;
-  let baseMonthlyPrincipal = isBullet ? 0 : resolveMonthlyPrincipal(contract, totalPeriods);
+  const baseMonthlyPrincipal = isBullet ? 0 : resolveMonthlyPrincipal(contract, totalPeriods);
 
   let planBalance = loanAmt;
   let actualBalance = loanAmt;
+  // Như Vietbank: gốc trả trước bù vào gốc chính kỳ đó rồi các kỳ kế tiếp, mức gốc mỗi kỳ giữ nguyên.
+  let prepaidCredit = 0;
   let prevDateStr: string =
     contract.DisbursementDate ||
     contract.ContractStartDate ||
@@ -490,15 +492,14 @@ export function recalculateSchedules(
       scheduledPrincipal = Math.min(planBalance, baseMonthlyPrincipal);
     }
 
-    const principalInPeriod = Math.min(planBalance, scheduledPrincipal + prepaid);
-
-    if (prepaid > 0 && !isBullet) {
-      const remainingPeriods = totalPeriods - Math.max(periodNum, graceMonths);
-      if (remainingPeriods > 0) {
-        const balAfterPrepay = Math.max(0, planBalance - principalInPeriod);
-        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods);
-      }
+    if (!isBullet) {
+      prepaidCredit += prepaid;
+      const covered = Math.min(prepaidCredit, scheduledPrincipal);
+      prepaidCredit -= covered;
+      scheduledPrincipal -= covered;
     }
+
+    const principalInPeriod = Math.min(planBalance, scheduledPrincipal + prepaid);
 
     const collectedPrincipal = s.IsPaid
       ? (s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0

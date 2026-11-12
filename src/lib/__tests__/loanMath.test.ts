@@ -496,18 +496,30 @@ describe('recalculateSchedules', () => {
     expect(tongGoc).toBe(120_000_000);
   });
 
-  it('trả trước hạn TRONG lúc còn ân hạn gốc: gốc đều sau ân hạn tính theo số kỳ sau ân hạn, không dồn cục kỳ cuối', () => {
+  it('trả trước hạn TRONG lúc còn ân hạn gốc: để dành bù vào các kỳ đầu sau ân hạn, mức gốc mỗi kỳ giữ nguyên, kỳ cuối không dồn cục', () => {
     const hd = { ...hopDong, LoanAmount: 960_000_000, PrincipalGracePeriodMonths: 18 };
     const l = lich(120);
     l[1] = { ...l[1], PrepaidPrincipalAmount: 8_000_000 };
     l[2] = { ...l[2], PrepaidPrincipalAmount: 8_000_000 };
     const r = recalculateSchedules(l, hd);
 
-    const firstAfterGrace = r[18].PrincipalAmount!;
-    const lastPeriod = r[r.length - 1].PrincipalAmount!;
-    expect(firstAfterGrace).toBeGreaterThan(9_000_000);
-    expect(lastPeriod).toBeLessThan(firstAfterGrace * 1.5);
+    const m = roundPrincipalCore(960_000_000 / 102);
+    expect(r[1].PrincipalAmount).toBe(8_000_000);
+    expect(r[18].PrincipalAmount).toBe(0);
+    expect(r[19].PrincipalAmount).toBe(m - (16_000_000 - m));
+    expect(r[20].PrincipalAmount).toBe(m);
+    expect(r[r.length - 1].PrincipalAmount!).toBeLessThanOrEqual(m);
     expect(r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
+  });
+
+  it('trả trước kiểu Vietbank: bù vào gốc chính kỳ đó và các kỳ kế tiếp cho tới khi hết, các kỳ được bù chỉ còn lãi', () => {
+    const l = lich(12);
+    l[2] = { ...l[2], PrepaidPrincipalAmount: 25_000_000 };
+    const r = recalculateSchedules(l, hopDong);
+    expect(r.map(k => k.PrincipalAmount)).toEqual([
+      10_000_000, 10_000_000, 25_000_000, 0, 5_000_000,
+      10_000_000, 10_000_000, 10_000_000, 10_000_000, 10_000_000, 10_000_000, 10_000_000,
+    ]);
   });
 
   it('cộng lãi phạt quá hạn vào tổng phải trả của kỳ', () => {
@@ -553,7 +565,8 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
     l[9] = { ...l[9], PrepaidPrincipalAmount: 900_000_000 };
     const r = recalculateSchedules(l, hopDongHM);
 
-    expect(r[9].PrincipalAmount).toBe(gocDeuMoiKy + 900_000_000);
+    expect(gocDeuMoiKy).toBeLessThan(900_000_000);
+    expect(r[9].PrincipalAmount).toBe(900_000_000);
   });
 
   it('dư nợ GIẢM đúng bằng số tiền trả trước hạn', () => {
@@ -566,7 +579,8 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
     const duNoTruoc = computeOutstandingBalance(khongTraTruoc, hopDongHM);
     const duNoSau = computeOutstandingBalance(coTraTruoc, hopDongHM);
 
-    expect(duNoTruoc - duNoSau).toBe(900_000_000);
+    // Gốc thường của kỳ đó đã được tiền trả trước bù nên khách chỉ nộp đúng số trả trước.
+    expect(duNoTruoc - duNoSau).toBe(900_000_000 - roundPrincipalCore(3_800_000_000 / 240));
   });
 
   it('trả trước hạn làm GIẢM gốc phải trả các kỳ chưa đến hạn', () => {
@@ -1052,7 +1066,8 @@ describe('không ghi đè kỳ ĐÃ THU', () => {
       DisbursementDate: '2025-12-20', PrincipalRepaymentMethod: 'Gốc trả đều',
     } as LoanContract;
     const r = recalculateSchedules(goc, hd);
-    expect(r[1].PrincipalAmount).toBeGreaterThan(10_000_000);
+    expect(r[1].PrincipalAmount).toBe(10_000_000);
+    expect(r[1].PrepaidPrincipalAmount).toBe(5_000_000);
     expect(r[1].InterestAmount).toBe(500_001);
   });
 });
@@ -1082,14 +1097,14 @@ describe('tiền trả trước hạn ghi vào cột riêng, không nhét trong 
     expect(sinh().reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(100_000_000);
   });
 
-  it('recalculateSchedules đọc lại từ cột và cho ra cùng số gốc', () => {
+  it('recalculateSchedules đọc lại tiền trả trước từ cột và áp quy tắc bù kỳ kế tiếp', () => {
     const sinhMoi = sinh() as RepaymentSchedule[];
     const hd = {
       Id: 1, LoanAmount: 100_000_000, InterestRate: 0.1,
       DisbursementDate: '2026-01-15', PrincipalRepaymentMethod: 'Gốc trả đều',
     } as LoanContract;
     const lai = recalculateSchedules(sinhMoi, hd);
-    expect(lai[3].PrincipalAmount).toBe(sinhMoi[3].PrincipalAmount);
+    expect(lai[3].PrincipalAmount).toBe(20_000_000);
     expect(lai.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(100_000_000);
   });
 });
